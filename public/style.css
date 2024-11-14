@@ -1,0 +1,172 @@
+/* Style global */
+body {
+  font-family: "Gill Sans", sans-serif;
+  background-color: #ececec; /* Un gris clair pour le fond */
+  color: #090808; /* Un gris foncé pour le texte principal */
+  margin: 0;
+  padding: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 70vh;
+  min-width: 70vh;
+}
+
+html {
+  height: 100%;
+  background: rgb(63, 94, 251);
+  background: radial-gradient(
+    circle,
+    rgba(63, 94, 251, 1) 0%,
+    rgba(252, 70, 107, 1) 100%
+  );
+}
+/* Bandeau supérieur */
+
+.titre {
+  font-size: 37px;
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.2);
+  color: #000000;
+  font-weight: bolder;
+}
+
+p {
+  font-size: 18px;
+  text-shadow: 2px 2px 4px rgba(255, 255, 255, 0.2);
+  color: #000000;
+  font-weight: bolder;
+}
+
+/* Conteneur principal */
+.container {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  max-width: 400px;
+  width: 100%;
+  text-align: center;
+}
+
+/* Style pour le score et le timer */
+.score-timer-container h2 {
+  font-size: 15px;
+  margin: 20px 0;
+  color: #333;
+}
+
+/* Formulaire */
+.fieldset-style {
+  border: none;
+  padding: 0;
+  margin: 20px 0;
+}
+
+.legend-style {
+  font-size: 15px;
+  font-weight: bold;
+  margin-bottom: 15px;
+  color: #333; /* Un gris plus foncé pour le texte */
+}
+
+.input-container {
+  font-family: "Gill Sans", sans-serif;
+
+  margin-bottom: 15px;
+}
+
+.input-style {
+  width: 100%;
+  padding: 10px;
+  font-size: 16px;
+  border: 1px solid #aaa; /* Bordure plus foncée pour un meilleur contraste */
+  border-radius: 4px;
+  box-sizing: border-box;
+}
+
+/* Boutons */
+.button-container {
+  font-family: "Gill Sans", sans-serif;
+
+  margin-top: 20px;
+}
+
+.button-style {
+  font-family: "Gill Sans", sans-serif;
+
+  background-color: #1e88e5; /* Bleu foncé pour un bon contraste avec le texte blanc */
+  color: white;
+  border: none;
+  padding: 10px 15px;
+  font-size: 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  width: 100%;
+}
+
+.button-style:hover {
+  background-color: #1565c0; /* Bleu encore plus foncé pour l'effet hover */
+}
+
+/* Mot à deviner */
+.word-display {
+  font-family: "Gill Sans", sans-serif;
+
+  background-color: #fafafa; /* Fond très léger mais avec un bon contraste */
+  padding: 10px;
+  border-radius: 4px;
+  font-size: 18px;
+  color: #2c2c2c; /* Texte plus foncé */
+  margin-top: 20px;
+}
+
+/* Messages de fin de partie */
+.end-game {
+  margin-top: 20px;
+  font-size: 18px;
+  font-weight: bold;
+  font-family: "Gill Sans", sans-serif;
+}
+
+.victory {
+  font-family: "Gill Sans", sans-serif;
+
+  color: #388e3c; /* Vert foncé pour la victoire */
+}
+
+.defeat {
+  font-family: "Gill Sans", sans-serif;
+
+  color: #d32f2f; /* Rouge foncé pour la défaite */
+}
+
+.classh3 {
+  font-family: "Gill Sans", sans-serif;
+
+  font-size: 24px;
+  color: #333;
+}
+
+/* Style pour le conteneur de partage */
+.share-container {
+  margin-top: 20px;
+  text-align: center;
+}
+
+/* Bouton E-mail */
+.email-button {
+  background-color: #0078d4; /* Couleur bleue typique des icônes d'e-mail */
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  font-size: 16px;
+  border-radius: 5px;
+  cursor: pointer;
+  margin-top: 10px;
+  display: inline-block;
+  font-family: "Gill Sans", sans-serif;
+}
+
+.email-button:hover {
+  background-color: #005a9e; /* Couleur légèrement plus foncée pour le survol */
+}
