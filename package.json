@@ -17,6 +17,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "nodemon": "^3.1.4",
+    "sqlite3": "^5.1.7",
     "three.js": "^0.77.1"
   },
   "devDependencies": {

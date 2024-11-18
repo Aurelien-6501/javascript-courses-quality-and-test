@@ -69,14 +69,19 @@ app.get("/", (req, res) => {
   // Calculer le temps écoulé
   const elapsedTime = calculateElapsedTime(playerGame.startTime);
 
-  // Si le jeu est terminé, on garde le score final, sinon on le met à jour
-  const currentScore =
-    playerGame.numberOfTries <= 0 || playerGame.unknowWord.indexOf("#") === -1
-      ? playerGame.score
-      : playerGame.score - elapsedTime;
+  // Vérifier si le jeu est terminé (victoire ou défaite)
+  const isGameFinished =
+    playerGame.numberOfTries <= 0 || playerGame.unknowWord.indexOf("#") === -1;
 
-  // Mettre à jour le score dans la session pour qu'il soit persisté
-  playerGame.score = currentScore;
+  // Si le jeu est terminé, ne pas recalculer le score
+  const currentScore = isGameFinished
+    ? playerGame.score
+    : playerGame.score - elapsedTime;
+
+  // Mettre à jour le score dans la session pour qu'il soit persisté uniquement si le jeu n'est pas terminé
+  if (!isGameFinished) {
+    playerGame.score = currentScore;
+  }
 
   res.render("pages/index", {
     game: playerGame.unknowWord,
@@ -119,6 +124,23 @@ app.post("/", (req, res) => {
     });
   }
 
+  // Vérifier si le jeu est terminé
+  const isGameFinished =
+    playerGame.numberOfTries <= 0 || playerGame.unknowWord.indexOf("#") === -1;
+
+  // Si le jeu est terminé, ne pas effectuer de mise à jour du score
+  if (isGameFinished) {
+    return res.render("pages/index", {
+      game: playerGame.unknowWord,
+      word: playerGame.word,
+      numberOfTries: playerGame.numberOfTries,
+      score: playerGame.score,
+      elapsedTime: calculateElapsedTime(playerGame.startTime),
+      error: null,
+    });
+  }
+
+  // Si le jeu n'est pas terminé, continuer la logique de jeu
   let found = false;
   let updatedWord = playerGame.unknowWord.split("");
 
