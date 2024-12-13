@@ -1,80 +1,57 @@
-const index = require("../index.js");
+const request = require("supertest");
+const app = require("../index");
+jest.setTimeout(1000);
+jest.useFakeTimers("legacy");
 
-describe("index.js", () => {
-  test("should render the page correctly", () => {
-    const locals = {
-      score: 100,
-      elapsedTime: 60,
-      numberOfTries: 3,
-      word: "hello",
-      unknowWord: "######",
-    };
-  });
-});
-test("devrait calculer correctement le temps écoulé", () => {
-  const startTime = Date.now() - 5000; // 5 secondes dans le passé
-  const elapsedTime = index.calculateElapsedTime(startTime);
-  expect(elapsedTime).toBe(5);
+describe("GET /", () => {
+  it("devrait rendre la page d'accueil avec les données du jeu", async () => {
+    const res = await request(app).get("/");
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toContain("nameSubmitted");
+    jest.runOnlyPendingTimers();
+  }, 1000);
 });
 
-test("devrait gérer correctement une entrée invalide", () => {
-  const req = {
-    session: {
-      playerGame: {
-        unknowWord: "######",
-        word: "bonjour",
-        numberOfTries: 5,
-        score: 1000,
-        startTime: Date.now(),
-      },
-    },
-    body: {
-      word: "123", // Entrée invalide
-    },
-  };
-  const res = {
-    status: jest.fn().mockReturnThis(),
-    render: jest.fn(),
-  };
+describe("POST /", () => {
+  it("devrait accepter une lettre valide et mettre à jour l'état du jeu", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ word: "e" })
+      .set("Content-Type", "application/x-www-form-urlencoded");
+    expect(res.statusCode).toBe(302);
+    jest.runOnlyPendingTimers();
+  }, 1000);
 
-  index.handleGuess(req, res);
-
-  expect(res.status).toHaveBeenCalledWith(400);
-  expect(res.render).toHaveBeenCalledWith(
-    "pages/index",
-    expect.objectContaining({
-      error:
-        "Entrée invalide. Veuillez entrer une lettre, un espace ou un tiret.",
-    })
-  );
+  it("devrait rejeter une lettre invalide", async () => {
+    const res = await request(app)
+      .post("/")
+      .send({ word: "1" })
+      .set("Content-Type", "application/x-www-form-urlencoded");
+    expect(res.statusCode).toBe(400);
+    expect(res.text).toContain(
+      "Entrée invalide. Veuillez entrer une lettre, un espace ou un tiret."
+    );
+    jest.runOnlyPendingTimers();
+  }, 1000);
 });
 
-test("devrait mettre à jour correctement le mot inconnu lors d'une devinette correcte", () => {
-  const req = {
-    session: {
-      playerGame: {
-        unknowWord: "######",
-        word: "bonjour",
-        numberOfTries: 5,
-        score: 1000,
-        startTime: Date.now(),
-      },
-    },
-    body: {
-      word: "o",
-    },
-  };
-  const res = {
-    render: jest.fn(),
-  };
+describe("POST /save-score", () => {
+  it("devrait enregistrer un score valide", async () => {
+    const res = await request(app)
+      .post("/save-score")
+      .send({ name: "TestUser", score: 100 })
+      .set("Content-Type", "application/json");
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toBe("Score enregistré !");
+    jest.runOnlyPendingTimers();
+  }, 1000);
+});
 
-  index.handleGuess(req, res);
-
-  expect(req.session.playerGame.unknowWord).toBe("#o##o##");
-  expect(res.render).toHaveBeenCalledWith(
-    "pages/index",
-    expect.objectContaining({
-      game: "#o##o##",
-    })
-  );
+describe("Session et jeu global", () => {
+  it("devrait initialiser une nouvelle session pour un joueur", async () => {
+    const res = await request(app).get("/");
+    expect(res.statusCode).toBe(200);
+    expect(res.text).toContain("score");
+    jest.runOnlyPendingTimers();
+  }, 1000);
 });

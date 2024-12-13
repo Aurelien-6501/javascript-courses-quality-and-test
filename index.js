@@ -3,6 +3,7 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const Game = require("./game.js");
+const db = require("./database.js");
 
 const PORT = process.env.PORT || 3030;
 const app = express();
@@ -45,12 +46,6 @@ function calculateElapsedTime(startTime) {
   return Math.floor((Date.now() - startTime) / 1000);
 }
 
-// Fonction pour vérifier si un joueur peut jouer
-function canPlayToday(lastPlayedDate) {
-  const today = new Date().toISOString().slice(0, 10); // YYYY-MM-DD format
-  return !lastPlayedDate || lastPlayedDate !== today;
-}
-
 // Route principale pour rendre l'interface de jeu
 app.get("/", (req, res) => {
   if (!req.session.playerGame) {
@@ -60,37 +55,29 @@ app.get("/", (req, res) => {
       score: 1000,
       numberOfTries: 5,
       startTime: Date.now(),
+      nameSubmitted: false, // Nouveau flag pour suivre si le nom a été soumis
     };
-    req.session.lastPlayedDate = new Date().toISOString().slice(0, 10); // Enregistrer la date de la dernière partie
   }
 
   const playerGame = req.session.playerGame;
 
-  // Calculer le temps écoulé
-  const elapsedTime = calculateElapsedTime(playerGame.startTime);
+  db.all(
+    "SELECT name, score FROM scores ORDER BY score DESC LIMIT 1000",
+    [],
+    (err, rows) => {
+      const scores = rows || [];
 
-  // Vérifier si le jeu est terminé (victoire ou défaite)
-  const isGameFinished =
-    playerGame.numberOfTries <= 0 || playerGame.unknowWord.indexOf("#") === -1;
-
-  // Si le jeu est terminé, ne pas recalculer le score
-  const currentScore = isGameFinished
-    ? playerGame.score
-    : playerGame.score - elapsedTime;
-
-  // Mettre à jour le score dans la session pour qu'il soit persisté uniquement si le jeu n'est pas terminé
-  if (!isGameFinished) {
-    playerGame.score = currentScore;
-  }
-
-  res.render("pages/index", {
-    game: playerGame.unknowWord,
-    word: playerGame.word,
-    numberOfTries: playerGame.numberOfTries,
-    score: currentScore,
-    elapsedTime: elapsedTime,
-    error: null,
-  });
+      res.render("pages/index", {
+        game: playerGame.unknowWord,
+        word: playerGame.word,
+        numberOfTries: playerGame.numberOfTries,
+        score: playerGame.score,
+        elapsedTime: calculateElapsedTime(playerGame.startTime),
+        scores,
+        nameSubmitted: playerGame.nameSubmitted,
+      });
+    }
+  );
 });
 
 // Route pour traiter la soumission d'une lettre
@@ -124,23 +111,6 @@ app.post("/", (req, res) => {
     });
   }
 
-  // Vérifier si le jeu est terminé
-  const isGameFinished =
-    playerGame.numberOfTries <= 0 || playerGame.unknowWord.indexOf("#") === -1;
-
-  // Si le jeu est terminé, ne pas effectuer de mise à jour du score
-  if (isGameFinished) {
-    return res.render("pages/index", {
-      game: playerGame.unknowWord,
-      word: playerGame.word,
-      numberOfTries: playerGame.numberOfTries,
-      score: playerGame.score,
-      elapsedTime: calculateElapsedTime(playerGame.startTime),
-      error: null,
-    });
-  }
-
-  // Si le jeu n'est pas terminé, continuer la logique de jeu
   let found = false;
   let updatedWord = playerGame.unknowWord.split("");
 
@@ -162,12 +132,37 @@ app.post("/", (req, res) => {
     playerGame.score -= 50; // Retirer 50 points par essai raté
   }
 
-  res.render("pages/index", {
-    game: playerGame.unknowWord,
-    word: playerGame.word,
-    numberOfTries: playerGame.numberOfTries,
-    score: playerGame.score,
-    elapsedTime: calculateElapsedTime(playerGame.startTime),
-    error: null,
-  });
+  res.redirect("/");
 });
+
+// Route pour enregistrer le score du gagnant
+app.post("/save-score", (req, res) => {
+  const { name, score } = req.body;
+
+  // Vérifier si le nom a déjà été soumis
+  if (req.session.playerGame.nameSubmitted) {
+    return res.status(400).send("Nom déjà enregistré pour cette partie.");
+  }
+
+  const date = new Date().toISOString();
+
+  db.run(
+    "INSERT INTO scores (name, score, date) VALUES (?, ?, ?)",
+    [name, score, date],
+    (err) => {
+      if (err) {
+        console.error("Erreur lors de l'enregistrement du score :", err);
+        return res
+          .status(500)
+          .send("Erreur lors de l'enregistrement du score.");
+      }
+
+      // Marquer le nom comme soumis
+      req.session.playerGame.nameSubmitted = true;
+
+      res.status(200).send("Score enregistré !");
+    }
+  );
+});
+
+module.exports = app;

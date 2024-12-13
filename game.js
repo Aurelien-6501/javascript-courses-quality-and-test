@@ -8,6 +8,8 @@ class Game {
     this.numberOfTry = 5;
     this.score = 1000; // Score initial
     this.startTime = null; // Pour suivre le temps écoulé
+    this.word = null; // Mot actuel
+    this.unknowWord = null; // Mot caché
   }
 
   loadWords() {
@@ -15,10 +17,15 @@ class Game {
       fs.createReadStream("words_fr.txt")
         .pipe(csv())
         .on("data", (row) => {
-          this.listOfWords.push(row.word.toLowerCase());
+          if (row.word) {
+            this.listOfWords.push(row.word.toLowerCase());
+          }
         })
         .on("end", () => {
           console.log("CSV file successfully processed");
+          if (this.listOfWords.length === 0) {
+            return reject(new Error("No words loaded from the file."));
+          }
           this.chooseWord();
           this.startTime = Date.now(); // Enregistre l'heure de début
           resolve();
@@ -28,12 +35,17 @@ class Game {
   }
 
   chooseWord() {
-    if (this.listOfWords.length > 0) {
-      this.word = this.listOfWords[tools.getRandomInt(this.listOfWords.length)];
-      this.unknowWord = this.word.replace(/./g, "#");
-    } else {
-      throw new Error("No words available to choose from.");
+    if (!this.listOfWords || this.listOfWords.length === 0) {
+      throw new Error(
+        "No words available to choose from. Ensure words are loaded first."
+      );
     }
+    const randomIndex = tools.getRandomInt(this.listOfWords.length);
+    this.word = this.listOfWords[randomIndex];
+    if (!this.word) {
+      throw new Error("Chosen word is undefined.");
+    }
+    this.unknowWord = this.word.replace(/./g, "#");
   }
 
   guess(oneLetter) {
@@ -46,7 +58,6 @@ class Game {
       throw new Error("unknowWord is not initialized.");
     }
 
-    // Calculer le temps écoulé et ajuster le score
     const elapsedTime = Math.floor((Date.now() - this.startTime) / 1000);
     this.score -= elapsedTime;
 
@@ -67,7 +78,6 @@ class Game {
       this.score -= 50; // Retirer 50 points par essai raté
     }
 
-    // S'assurer que le score ne descend jamais en dessous de 0
     if (this.score < 0) {
       this.score = 0;
     }

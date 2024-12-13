@@ -172,47 +172,60 @@ p {
 }
 
 /* Style de la popup */
-.popup {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  position: fixed;
-  top: 0;
-  left: 0;
+/* Style pour le tableau des scores */
+table {
   width: 100%;
-  height: 100%;
-  background: rgba(0, 0, 0, 0.5);
+  border-collapse: collapse;
+  margin: 20px 0;
+  font-size: 18px;
+  text-align: left;
+}
+table th,
+table td {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+table th {
+  background-color: #424446;
+  color: white;
+}
+table tr:nth-child(even) {
+  background-color: #f2f2f2;
+}
+/* Popup Style */
+.popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: white;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border-radius: 8px;
+  display: none;
   z-index: 1000;
 }
-
 .popup-content {
-  background-color: white;
-  padding: 20px;
-  border-radius: 8px;
   text-align: center;
-  width: 300px;
 }
-
-.popup h2 {
-  font-size: 20px;
-  margin-bottom: 20px;
-}
-
 .popup input {
   padding: 10px;
+  font-size: 16px;
+  margin-top: 10px;
   margin-bottom: 10px;
   width: 100%;
-}
-
-.popup button {
-  padding: 10px;
-  background-color: #1e88e5;
-  color: white;
-  border: none;
+  border: 1px solid #ddd;
   border-radius: 4px;
+}
+.popup button {
+  font-size: 16px;
+  background-color: #4caf50;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 5px;
   cursor: pointer;
 }
-
 .popup button:hover {
-  background-color: #1565c0;
+  background-color: #45a049;
 }

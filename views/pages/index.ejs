@@ -17,14 +17,12 @@
         </h2>
       </div>
 
-      <!-- On vérifie si le jeu est terminé avant d'afficher le formulaire -->
       <% if (numberOfTries > 0 && game.indexOf('#') !== -1) { %>
       <form id="guessForm" action="/" method="post">
         <fieldset class="fieldset-style">
           <legend class="legend-style">
             Nombre d'essais restants : <%= numberOfTries %>
           </legend>
-
           <div class="input-container">
             <input
               class="input-style"
@@ -36,7 +34,6 @@
               required
             />
           </div>
-
           <div class="button-container">
             <button
               class="button-style button-test"
@@ -50,12 +47,34 @@
       </form>
       <% } %> <% if (game) { %>
       <h3 class="word-display">Mot à deviner : <%= game %></h3>
-      <% } %> <% if (game && game.indexOf('#') === -1) { %>
-      <div class="end-game victory">
-        🎉 Vous avez gagné !
-        <h4>Score final : <%= score %></h4>
+      <% } %>
+
+      <!-- Popup pour entrer le nom -->
+      <div id="winnerPopup" class="popup" style="display: none">
+        <div class="popup-content">
+          <h3>Félicitations ! 🎉</h3>
+          <p>Entrez votre nom pour enregistrer votre score :</p>
+          <form id="winnerForm">
+            <input
+              type="text"
+              id="winnerName"
+              name="winnerName"
+              placeholder="Votre nom"
+              required
+            />
+            <div style="margin-bottom: 10px">
+              <button id="submitNameButton" type="submit" class="button-style">
+                Enregistrer
+              </button>
+            </div>
+            <button id="closePopupButton" class="button-style close-button">
+              Fermer la popup
+            </button>
+          </form>
+        </div>
       </div>
-      <% } else if (numberOfTries <= 0) { %>
+
+      <% if (numberOfTries <= 0) { %>
       <div class="end-game defeat">
         😞 Vous avez perdu...
         <h3 class="classh3">Le mot était : <%= word %></h3>
@@ -63,63 +82,87 @@
       </div>
       <% } %>
 
-      <!-- Boutons de partage -->
-      <% if (game && game.indexOf('#') === -1 || numberOfTries <= 0) { %>
-      <div class="share-container">
-        <button id="emailButton" class="button-style email-button">
-          Partager par E-mail
-        </button>
-      </div>
-      <% } %>
+      <section>
+        <p>Tableau des scores</p>
+        <table id="scoreTable" border="1" class="container">
+          <thead>
+            <tr>
+              <th>Nom</th>
+              <th>Score</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% if (scores.length > 0) { %> <% scores.forEach((score) => { %>
+            <tr>
+              <td><%= score.name %></td>
+              <td><%= score.score %></td>
+            </tr>
+            <% }); %> <% } else { %>
+            <tr>
+              <td colspan="2">Aucun gagnant pour le moment</td>
+            </tr>
+            <% } %>
+          </tbody>
+        </table>
+      </section>
     </main>
 
-    <% if (typeof error !== 'undefined' && error) { %>
     <script>
-      alert("<%= error %>");
-    </script>
-    <% } %>
+            let score = <%= score %>;
+            let elapsedTime = <%= elapsedTime %>;
+            let startTime = Date.now() - elapsedTime * 1000;
+            let gameEnded = <%= (numberOfTries <= 0 || (game && game.indexOf('#') === -1)) %>;
 
-    <script>
-      let initialElapsedTime = <%= elapsedTime %>;
-      let initialScore = <%= score %>;
-      let startTime = Date.now() - initialElapsedTime * 1000;
-      let gameEnded = <%= (numberOfTries <= 0 || (game && game.indexOf('#') === -1)) %>;
+            function updateTimerAndScore() {
+              if (gameEnded) return; // Stop updates if the game has ended
 
-      function updateTimerAndScore() {
-        if (gameEnded) return;
+              const now = Date.now();
+              const newElapsedTime = Math.floor((now - startTime) / 1000);
+              const newScore = Math.max(score - newElapsedTime, 0); // Le score ne peut pas être négatif
 
-        const currentTime = Date.now();
-        const elapsedTime = Math.floor((currentTime - startTime) / 1000);
-        const newScore = initialScore - elapsedTime;
+              // Mise à jour dans le DOM
+              document.getElementById("timer").innerText = newElapsedTime;
+              document.getElementById("score").innerText = newScore;
+            }
 
-        document.getElementById("timer").innerText = elapsedTime;
-        document.getElementById("score").innerText = newScore;
-      }
+            // Mettre à jour le timer et le score toutes les secondes
+            const intervalId = setInterval(() => {
+              updateTimerAndScore();
 
-      const intervalId = setInterval(() => {
-        updateTimerAndScore();
+              // Si le jeu est terminé, arrêter l'intervalle et afficher la popup
+              if (gameEnded) {
+                clearInterval(intervalId);
+                if (document.getElementById("winnerPopup")) {
+                  document.getElementById("winnerPopup").style.display = "block";
+                }
+              }
+            }, 1000);
 
-        // Arrêter le timer si le jeu est terminé
-        if (gameEnded) {
-          clearInterval(intervalId);
-        }
-      }, 1000);
+            // Gérer le formulaire de soumission du nom
+            const winnerForm = document.getElementById("winnerForm");
+            if (winnerForm) {
+              winnerForm.onsubmit = (e) => {
+                e.preventDefault();
 
-      if (gameEnded) {
-        clearInterval(intervalId);
-      }
+                const name = document.getElementById("winnerName").value;
+                document.getElementById("submitNameButton").disabled = true;
 
-      // Fonction de partage par E-mail
-      document.getElementById('emailButton').onclick = function() {
-        const score = <%= score %>;
-        const subject = "Mon score au jeu du pendu";
-        const body = `Je viens de terminer le jeu du pendu avec un score de ${score} points ! Pouvez-vous battre mon score ? Rendez-vous sur http://localhost:3030/`;
-
-        const mailtoLink = `mailto:?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-
-        window.location.href = mailtoLink;
-        return false;
+                fetch("/save-score", {
+                  method: "POST",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ name, score }),
+                })
+                  .then(() => {
+                    alert("Score enregistré avec succès !");
+                    location.reload(); // Recharger la page pour mettre à jour le tableau des scores
+                  })
+                  .catch((err) => console.error("Erreur:", err));
+              };
+              document.getElementById('closePopupButton').onclick = () => {
+          document.getElementById('winnerPopup').style.display = 'none';
       };
+
+            }
     </script>
   </body>
 </html>

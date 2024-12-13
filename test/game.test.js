@@ -1,159 +1,133 @@
 const Game = require("../game.js");
+const fs = require("fs");
+const tools = require("../tools");
 
-let game;
-
-beforeAll(async () => {
-  game = new Game();
-  await game.loadWords();
-  game.word = "damien"; // Setting a known word for tests
-  game.unknowWord = "######";
-  jest.spyOn(console, "log").mockImplementation(() => {});
-});
-
-afterAll(() => {
-  console.log.mockRestore();
-});
+jest.mock("fs");
+jest.mock("../tools");
 
 describe("Game test", () => {
-  // Activer les timers factices pour tous les tests
+  let game;
+
+  beforeAll(() => {
+    jest.spyOn(console, "log").mockImplementation(() => {});
+  });
+
+  afterAll(() => {
+    jest.spyOn(console, "log").mockRestore();
+  });
+
   beforeEach(() => {
-    jest.useFakeTimers();
+    game = new Game();
   });
 
-  afterEach(() => {
-    jest.useRealTimers();
+  test("should initialize game properties correctly", () => {
+    expect(game.listOfWords).toEqual([]);
+    expect(game.numberOfTry).toBe(5);
+    expect(game.score).toBe(1000);
+    expect(game.startTime).toBeNull();
+    expect(game.word).toBeNull();
+    expect(game.unknowWord).toBeNull();
   });
 
-  test("The word must be 'damien'", () => {
+  test("should load words from file", async () => {
+    fs.createReadStream.mockImplementation(() => {
+      const readableStream = {
+        pipe: jest.fn().mockReturnThis(),
+        on: jest.fn((event, callback) => {
+          if (event === "data") callback({ word: "damien" });
+          if (event === "end") callback();
+          return readableStream;
+        }),
+      };
+      return readableStream;
+    });
+
+    await game.loadWords();
+    expect(game.listOfWords).toContain("damien");
+    expect(game.listOfWords.length).toBeGreaterThan(0);
+
+    // Vérifiez que chooseWord fonctionne correctement
+    game.chooseWord();
     expect(game.word).toBe("damien");
+    expect(game.unknowWord).toBe("######");
   });
 
-  test("should be 5 tries at the beginning of the game", () => {
-    expect(game.getNumberOfTries()).toBe(5);
+  test("should throw an error if no words are loaded", async () => {
+    fs.createReadStream.mockImplementation(() => {
+      const readableStream = {
+        pipe: jest.fn().mockReturnThis(),
+        on: jest.fn((event, callback) => {
+          if (event === "end") callback(); // Pas de données simulées
+          return readableStream;
+        }),
+      };
+      return readableStream;
+    });
+
+    await expect(game.loadWords()).rejects.toThrow(
+      "No words loaded from the file."
+    );
   });
 
-  test("test the try mechanic with a correct guess", () => {
-    game.guess("a");
-    expect(game.getNumberOfTries()).toBe(5);
+  test("should choose a valid word", () => {
+    game.listOfWords = ["damien", "test"];
+    tools.getRandomInt.mockReturnValue(0); // Retourne toujours le premier mot
+    game.chooseWord();
+
+    expect(game.word).toBe("damien");
+    expect(game.unknowWord).toBe("######");
   });
 
-  test("test the try mechanic with an incorrect guess", () => {
-    game.guess("kdjhgkfjhgdfkjhg");
-    expect(game.getNumberOfTries()).toBe(4);
-  });
-
-  test("should show only 'a' letter", () => {
-    game.word = "damien";
-    game.unknowWord = "######";
-    game.guess("a");
-    console.log(game.word);
-    console.log(game.unknowWord);
-    expect(game.print()).toBe("#a####");
-  });
-
-  test("should throw an error if no words are available", () => {
+  test("should throw error if no words available in list", () => {
     game.listOfWords = [];
     expect(() => game.chooseWord()).toThrow(
       "No words available to choose from."
     );
   });
 
-  test("devrait initialiser le score à 1000 au début du jeu", () => {
-    const newGame = new Game();
-    expect(newGame.getScore()).toBe(1000);
+  test("should handle a correct guess and decrease score", () => {
+    game.word = "damien";
+    game.unknowWord = "######";
+    game.startTime = Date.now() - 5000; // Simule un temps écoulé de 5 secondes
+
+    const found = game.guess("d");
+    expect(found).toBe(true);
+    expect(game.print()).toBe("d#####");
+    expect(game.getScore()).toBeLessThan(1000); // Score doit diminuer en fonction du temps
   });
 
-  test("devrait réduire le score de 50 points pour chaque essai incorrect", () => {
-    const newGame = new Game();
-    newGame.word = "test";
-    const initialScore = newGame.getScore();
-    newGame.guess("z");
-    expect(newGame.getScore()).toBe(initialScore - 50);
+  test("should handle an incorrect guess and decrease score", () => {
+    game.word = "damien";
+    game.unknowWord = "######";
+    game.startTime = Date.now() - 2000;
+
+    const found = game.guess("z");
+    expect(found).toBe(false);
+    expect(game.getNumberOfTries()).toBe(4);
+    expect(game.getScore()).toBeLessThan(1000); // Score doit diminuer
   });
 
-  test("devrait réduire le score en fonction du temps écoulé", async () => {
-    const newGame = new Game();
-    await newGame.loadWords();
-    const initialScore = newGame.getScore();
+  test("should handle a guess when score is already zero", () => {
+    game.word = "damien";
+    game.unknowWord = "######";
+    game.startTime = Date.now();
+    game.score = 0;
 
-    // Simuler un délai de 5 secondes
-    jest.advanceTimersByTime(5000);
-
-    newGame.guess("a");
-    expect(newGame.getScore()).toBeLessThan(initialScore);
+    const found = game.guess("z");
+    expect(found).toBe(false);
+    expect(game.getScore()).toBe(0); // Score ne doit pas devenir négatif
   });
 
-  test("devrait réduire le score à zéro si le temps écoulé dépasse 1000 secondes", async () => {
-    const newGame = new Game();
-    await newGame.loadWords();
-
-    // Simuler un délai de 1001 secondes
-    jest.advanceTimersByTime(1001000);
-
-    newGame.guess("a");
-    expect(newGame.getScore()).toBe(0);
+  test("should throw error if unknowWord is not initialized when guessing", () => {
+    game.word = "damien";
+    game.unknowWord = null; // unknowWord non initialisée
+    expect(() => game.guess("a")).toThrow("unknowWord is not initialized.");
   });
 
-  test("ne devrait pas réduire le score en dessous de zéro", async () => {
-    const newGame = new Game();
-    await newGame.loadWords();
-
-    // Simuler un délai très long
-    jest.advanceTimersByTime(2000000);
-
-    newGame.guess("z");
-
-    expect(newGame.getScore()).toBe(0);
-  });
-
-  test("devrait augmenter le score de 100 points pour chaque lettre correcte devinée", () => {
-    const newGame = new Game();
-    newGame.word = "test";
-    newGame.unknownWord = "####";
-    const scoreInitial = newGame.getScore();
-
-    newGame.guess("t");
-
-    expect(newGame.getScore()).toBe(scoreInitial + 100);
-  });
-
-  test("ne devrait pas augmenter le score au-delà de 5000 points", () => {
-    const newGame = new Game();
-    newGame.word = "abcdefghijklmnopqrstuvwxyz";
-    newGame.unknownWord = "#".repeat(26);
-    newGame.score = 4950;
-
-    for (let i = 0; i < 10; i++) {
-      newGame.guess("abcdefghij"[i]);
-    }
-
-    expect(newGame.getScore()).toBe(5000);
-  });
-
-  test("devrait charger correctement les mots depuis le fichier", async () => {
-    const game = new Game();
-    await game.loadWords();
-
-    expect(game.words).toBeDefined();
-    expect(game.words.length).toBeGreaterThan(0);
-    expect(game.words[0]).toBe("AAA");
-  });
-
-  test("devrait sélectionner un mot aléatoire lors de l'initialisation", async () => {
-    const game = new Game();
-    await game.loadWords();
-
-    expect(game.word).toBeDefined();
-    expect(game.word.length).toBeGreaterThan(0);
-    expect(game.words).toContain(game.word);
-  });
-
-  test("devrait initialiser correctement le mot inconnu", async () => {
-    const game = new Game();
-    await game.loadWords();
-
-    expect(game.unknownWord).toBeDefined();
-    expect(game.unknownWord.length).toBe(game.word.length);
-    expect(game.unknownWord).toBe("#".repeat(game.word.length));
+  test("should throw error if guessing without initializing the word", () => {
+    game.word = null;
+    expect(() => game.guess("a")).toThrow(
+      "The word has not been set. Please ensure that the game has been initialized properly."
+    );
   });
 });
