@@ -17,7 +17,7 @@
         </h2>
       </div>
 
-      <% if (numberOfTries > 0 && game.indexOf('#') !== -1) { %>
+      <% if (numberOfTries > 0 && game && game.indexOf('#') !== -1) { %>
       <form id="guessForm" action="/" method="post">
         <fieldset class="fieldset-style">
           <legend class="legend-style">
@@ -49,7 +49,6 @@
       <h3 class="word-display">Mot à deviner : <%= game %></h3>
       <% } %>
 
-      <!-- Popup pour entrer le nom -->
       <div id="winnerPopup" class="popup" style="display: none">
         <div class="popup-content">
           <h3>Félicitations ! 🎉</h3>
@@ -71,6 +70,18 @@
               Fermer la popup
             </button>
           </form>
+        </div>
+      </div>
+
+      <div id="errorPopup" class="popup" style="display: none">
+        <div class="popup-content">
+          <h3>Erreur</h3>
+          <p>
+            Entrée invalide. Veuillez entrer une lettre, un espace ou un tiret.
+          </p>
+          <button id="closeErrorPopup" class="button-style close-button">
+            Fermer
+          </button>
         </div>
       </div>
 
@@ -108,61 +119,78 @@
     </main>
 
     <script>
-            let score = <%= score %>;
-            let elapsedTime = <%= elapsedTime %>;
-            let startTime = Date.now() - elapsedTime * 1000;
-            let gameEnded = <%= (numberOfTries <= 0 || (game && game.indexOf('#') === -1)) %>;
+      let score = <%= score %>;
+      let elapsedTime = <%= elapsedTime %>;
+      let startTime = Date.now() - elapsedTime * 1000;
+      let gameEnded = <%= (numberOfTries <= 0 || (game && game.indexOf('#') === -1)) %>;
+      let nameSubmitted = <%= nameSubmitted %>;
 
-            function updateTimerAndScore() {
-              if (gameEnded) return; // Stop updates if the game has ended
+      function updateTimerAndScore() {
+        if (gameEnded) return;
 
-              const now = Date.now();
-              const newElapsedTime = Math.floor((now - startTime) / 1000);
-              const newScore = Math.max(score - newElapsedTime, 0); // Le score ne peut pas être négatif
+        const now = Date.now();
+        const newElapsedTime = Math.floor((now - startTime) / 1000);
+        const newScore = Math.max(score - newElapsedTime, 0);
 
-              // Mise à jour dans le DOM
-              document.getElementById("timer").innerText = newElapsedTime;
-              document.getElementById("score").innerText = newScore;
-            }
+        document.getElementById("timer").innerText = newElapsedTime;
+        document.getElementById("score").innerText = newScore;
+      }
 
-            // Mettre à jour le timer et le score toutes les secondes
-            const intervalId = setInterval(() => {
-              updateTimerAndScore();
+      const intervalId = setInterval(() => {
+        updateTimerAndScore();
+        if (gameEnded && !nameSubmitted) {
+          clearInterval(intervalId);
+          if (document.getElementById("winnerPopup")) {
+            document.getElementById("winnerPopup").style.display = "block";
+          }
+        } else if (gameEnded) {
+          clearInterval(intervalId);
+        }
+      }, 1000);
 
-              // Si le jeu est terminé, arrêter l'intervalle et afficher la popup
-              if (gameEnded) {
-                clearInterval(intervalId);
-                if (document.getElementById("winnerPopup")) {
-                  document.getElementById("winnerPopup").style.display = "block";
-                }
-              }
-            }, 1000);
+      const winnerForm = document.getElementById("winnerForm");
+      if (winnerForm) {
+        winnerForm.onsubmit = (e) => {
+          e.preventDefault();
 
-            // Gérer le formulaire de soumission du nom
-            const winnerForm = document.getElementById("winnerForm");
-            if (winnerForm) {
-              winnerForm.onsubmit = (e) => {
-                e.preventDefault();
+          const name = document.getElementById("winnerName").value;
+          document.getElementById("submitNameButton").disabled = true;
 
-                const name = document.getElementById("winnerName").value;
-                document.getElementById("submitNameButton").disabled = true;
+          fetch("/save-score", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ name, score }),
+          })
+            .then(() => {
+              alert("Score enregistré avec succès !");
+              location.reload();
+            })
+            .catch((err) => console.error("Erreur:", err));
+        };
+        document.getElementById("closePopupButton").onclick = () => {
+          document.getElementById("winnerPopup").style.display = "none";
+        };
+      }
 
-                fetch("/save-score", {
-                  method: "POST",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({ name, score }),
-                })
-                  .then(() => {
-                    alert("Score enregistré avec succès !");
-                    location.reload(); // Recharger la page pour mettre à jour le tableau des scores
-                  })
-                  .catch((err) => console.error("Erreur:", err));
-              };
-              document.getElementById('closePopupButton').onclick = () => {
-          document.getElementById('winnerPopup').style.display = 'none';
-      };
+      const guessForm = document.getElementById("guessForm");
+      if (guessForm) {
+        guessForm.addEventListener("submit", (e) => {
+          const input = document.getElementById("wordInput").value;
+          const validRegex = /^[a-zA-ZÀ-ÿ\s-]$/;
 
-            }
+          if (!validRegex.test(input)) {
+            e.preventDefault();
+            document.getElementById("errorPopup").style.display = "block";
+          }
+        });
+      }
+
+      const closeErrorPopup = document.getElementById("closeErrorPopup");
+      if (closeErrorPopup) {
+        closeErrorPopup.addEventListener("click", () => {
+          document.getElementById("errorPopup").style.display = "none";
+        });
+      }
     </script>
   </body>
 </html>

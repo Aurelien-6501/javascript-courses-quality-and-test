@@ -102,7 +102,7 @@ describe("Game test", () => {
 
   test("should throw error if chosen word is undefined", () => {
     game.listOfWords = [null];
-    tools.getRandomInt.mockReturnValue(0); 
+    tools.getRandomInt.mockReturnValue(0);
     expect(() => game.chooseWord()).toThrow("Chosen word is undefined.");
   });
 
@@ -143,7 +143,7 @@ describe("Game test", () => {
 
   test("should throw error if unknowWord is not initialized when guessing", () => {
     game.word = "damien";
-    game.unknowWord = null; 
+    game.unknowWord = null;
     expect(() => game.guess("a")).toThrow("unknowWord is not initialized.");
   });
 
@@ -179,8 +179,8 @@ describe("Game test", () => {
         pipe: jest.fn().mockReturnThis(),
         on: jest.fn((event, callback) => {
           if (event === "data") {
-            callback({}); // Pas de 'word' => ligne ignorée
-            callback({ word: "validword" }); // Ligne valide
+            callback({});
+            callback({ word: "validword" });
           }
           if (event === "end") callback();
           return readableStream;
@@ -188,10 +188,8 @@ describe("Game test", () => {
       };
       return readableStream;
     });
-  
+
     await game.loadWords();
-    // On doit avoir uniquement "validword" dans la liste, car la ligne sans 'word' est ignorée.
     expect(game.listOfWords).toEqual(["validword"]);
   });
-  
 });

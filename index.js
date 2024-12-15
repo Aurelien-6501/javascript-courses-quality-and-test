@@ -13,14 +13,12 @@ app.use(
     secret: "secret",
     resave: false,
     saveUninitialized: true,
-    cookie: { maxAge: 24 * 60 * 60 * 1000 }, // Session valable pour 24 heures
+    cookie: { maxAge: 24 * 60 * 60 * 1000 },
   })
 );
 
-// Middleware
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
-
 app.use(express.static(path.join(__dirname, "public")));
 
 app.set("view engine", "ejs");
@@ -42,7 +40,6 @@ function calculateElapsedTime(startTime) {
   return Math.floor((Date.now() - startTime) / 1000);
 }
 
-// Route principale pour rendre l'interface de jeu
 app.get("/", (req, res) => {
   if (!req.session.playerGame) {
     req.session.playerGame = {
@@ -57,6 +54,22 @@ app.get("/", (req, res) => {
 
   const playerGame = req.session.playerGame;
 
+  const ended =
+    playerGame.numberOfTries <= 0 ||
+    (playerGame.unknowWord && playerGame.unknowWord.indexOf("#") === -1);
+
+  let elapsedTime;
+  if (ended) {
+    if (typeof playerGame.finalElapsedTime === "number") {
+      elapsedTime = playerGame.finalElapsedTime;
+    } else {
+      elapsedTime = calculateElapsedTime(playerGame.startTime);
+      playerGame.finalElapsedTime = elapsedTime;
+    }
+  } else {
+    elapsedTime = calculateElapsedTime(playerGame.startTime);
+  }
+
   db.all(
     "SELECT name, score FROM scores ORDER BY score DESC LIMIT 1000",
     [],
@@ -68,7 +81,7 @@ app.get("/", (req, res) => {
         word: playerGame.word,
         numberOfTries: playerGame.numberOfTries,
         score: playerGame.score,
-        elapsedTime: calculateElapsedTime(playerGame.startTime),
+        elapsedTime: elapsedTime,
         scores,
         nameSubmitted: playerGame.nameSubmitted,
       });
@@ -76,7 +89,6 @@ app.get("/", (req, res) => {
   );
 });
 
-// Route pour traiter la soumission d'une lettre
 app.post("/", (req, res) => {
   if (!req.session.playerGame) {
     return res.status(400).render("pages/index", {
@@ -88,6 +100,8 @@ app.post("/", (req, res) => {
         req.session.playerGame?.startTime || Date.now()
       ),
       error: "Erreur de session. Veuillez réessayer.",
+      scores: [],
+      nameSubmitted: false,
     });
   }
 
@@ -104,6 +118,8 @@ app.post("/", (req, res) => {
       elapsedTime: calculateElapsedTime(playerGame.startTime),
       error:
         "Entrée invalide. Veuillez entrer une lettre, un espace ou un tiret.",
+      scores: [],
+      nameSubmitted: playerGame.nameSubmitted,
     });
   }
 
@@ -119,19 +135,24 @@ app.post("/", (req, res) => {
 
   const elapsedTime = calculateElapsedTime(playerGame.startTime);
   playerGame.score -= elapsedTime;
-  playerGame.startTime = Date.now(); // Réinitialiser le temps de départ après un essai
-
+  playerGame.startTime = Date.now();
   if (found) {
     playerGame.unknowWord = updatedWord.join("");
   } else {
     playerGame.numberOfTries--;
-    playerGame.score -= 50; // Retirer 50 points par essai raté
+    playerGame.score -= 50;
+  }
+
+  const ended =
+    playerGame.numberOfTries <= 0 ||
+    (playerGame.unknowWord && playerGame.unknowWord.indexOf("#") === -1);
+  if (ended && typeof playerGame.finalElapsedTime !== "number") {
+    playerGame.finalElapsedTime = calculateElapsedTime(playerGame.startTime);
   }
 
   res.redirect("/");
 });
 
-// Route pour enregistrer le score du gagnant
 app.post("/save-score", (req, res) => {
   const { name, score } = req.body;
 
@@ -153,7 +174,6 @@ app.post("/save-score", (req, res) => {
       }
 
       req.session.playerGame.nameSubmitted = true;
-
       res.status(200).send("Score enregistré !");
     }
   );
