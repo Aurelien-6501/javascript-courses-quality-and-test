@@ -19,7 +19,7 @@
     "express": "^4.19.2",
     "express-session": "^1.18.0",
     "mocha": "^10.8.2",
-    "nodemon": "^3.1.4",
+    "nodemon": "^3.1.9",
     "sqlite3": "^5.1.7",
     "supertest-session": "^5.0.1",
     "three.js": "^0.77.1"

@@ -21,15 +21,12 @@ app.use(
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// Configuration du répertoire des fichiers statiques
 app.use(express.static(path.join(__dirname, "public")));
 
-// Définir EJS comme moteur de rendu
 app.set("view engine", "ejs");
 
-const globalGame = new Game(); // Initialisation du jeu global
+const globalGame = new Game();
 
-// Charger les mots et choisir un mot globalement pour tous les joueurs
 (async () => {
   try {
     await globalGame.loadWords();
@@ -41,7 +38,6 @@ const globalGame = new Game(); // Initialisation du jeu global
   }
 })();
 
-// Fonction pour calculer le temps écoulé
 function calculateElapsedTime(startTime) {
   return Math.floor((Date.now() - startTime) / 1000);
 }
@@ -55,7 +51,7 @@ app.get("/", (req, res) => {
       score: 1000,
       numberOfTries: 5,
       startTime: Date.now(),
-      nameSubmitted: false, // Nouveau flag pour suivre si le nom a été soumis
+      nameSubmitted: false,
     };
   }
 
@@ -139,7 +135,6 @@ app.post("/", (req, res) => {
 app.post("/save-score", (req, res) => {
   const { name, score } = req.body;
 
-  // Vérifier si le nom a déjà été soumis
   if (req.session.playerGame.nameSubmitted) {
     return res.status(400).send("Nom déjà enregistré pour cette partie.");
   }
@@ -157,7 +152,6 @@ app.post("/save-score", (req, res) => {
           .send("Erreur lors de l'enregistrement du score.");
       }
 
-      // Marquer le nom comme soumis
       req.session.playerGame.nameSubmitted = true;
 
       res.status(200).send("Score enregistré !");

@@ -13,11 +13,12 @@ describe("Game test", () => {
   });
 
   afterAll(() => {
-    jest.spyOn(console, "log").mockRestore();
+    console.log.mockRestore();
   });
 
   beforeEach(() => {
     game = new Game();
+    tools.getRandomInt.mockReturnValue(0);
   });
 
   test("should initialize game properties correctly", () => {
@@ -46,7 +47,6 @@ describe("Game test", () => {
     expect(game.listOfWords).toContain("damien");
     expect(game.listOfWords.length).toBeGreaterThan(0);
 
-    // Vérifiez que chooseWord fonctionne correctement
     game.chooseWord();
     expect(game.word).toBe("damien");
     expect(game.unknowWord).toBe("######");
@@ -57,7 +57,7 @@ describe("Game test", () => {
       const readableStream = {
         pipe: jest.fn().mockReturnThis(),
         on: jest.fn((event, callback) => {
-          if (event === "end") callback(); // Pas de données simulées
+          if (event === "end") callback();
           return readableStream;
         }),
       };
@@ -69,9 +69,24 @@ describe("Game test", () => {
     );
   });
 
+  test("should reject if file reading fails", async () => {
+    fs.createReadStream.mockImplementation(() => {
+      const readableStream = {
+        pipe: jest.fn().mockReturnThis(),
+        on: jest.fn((event, callback) => {
+          if (event === "error") callback(new Error("File reading error"));
+          return readableStream;
+        }),
+      };
+      return readableStream;
+    });
+
+    await expect(game.loadWords()).rejects.toThrow("File reading error");
+  });
+
   test("should choose a valid word", () => {
     game.listOfWords = ["damien", "test"];
-    tools.getRandomInt.mockReturnValue(0); // Retourne toujours le premier mot
+    tools.getRandomInt.mockReturnValue(0);
     game.chooseWord();
 
     expect(game.word).toBe("damien");
@@ -81,19 +96,26 @@ describe("Game test", () => {
   test("should throw error if no words available in list", () => {
     game.listOfWords = [];
     expect(() => game.chooseWord()).toThrow(
-      "No words available to choose from."
+      "No words available to choose from. Ensure words are loaded first."
     );
   });
 
-  test("should handle a correct guess and decrease score", () => {
+  test("should throw error if chosen word is undefined", () => {
+    game.listOfWords = [null];
+    tools.getRandomInt.mockReturnValue(0); 
+    expect(() => game.chooseWord()).toThrow("Chosen word is undefined.");
+  });
+
+  test("should handle a correct guess and decrease score due to time", () => {
     game.word = "damien";
     game.unknowWord = "######";
-    game.startTime = Date.now() - 5000; // Simule un temps écoulé de 5 secondes
+    game.startTime = Date.now() - 5000;
 
+    const oldScore = game.getScore();
     const found = game.guess("d");
     expect(found).toBe(true);
     expect(game.print()).toBe("d#####");
-    expect(game.getScore()).toBeLessThan(1000); // Score doit diminuer en fonction du temps
+    expect(game.getScore()).toBeLessThan(oldScore);
   });
 
   test("should handle an incorrect guess and decrease score", () => {
@@ -101,10 +123,11 @@ describe("Game test", () => {
     game.unknowWord = "######";
     game.startTime = Date.now() - 2000;
 
+    const oldScore = game.getScore();
     const found = game.guess("z");
     expect(found).toBe(false);
     expect(game.getNumberOfTries()).toBe(4);
-    expect(game.getScore()).toBeLessThan(1000); // Score doit diminuer
+    expect(game.getScore()).toBeLessThan(oldScore);
   });
 
   test("should handle a guess when score is already zero", () => {
@@ -115,12 +138,12 @@ describe("Game test", () => {
 
     const found = game.guess("z");
     expect(found).toBe(false);
-    expect(game.getScore()).toBe(0); // Score ne doit pas devenir négatif
+    expect(game.getScore()).toBe(0);
   });
 
   test("should throw error if unknowWord is not initialized when guessing", () => {
     game.word = "damien";
-    game.unknowWord = null; // unknowWord non initialisée
+    game.unknowWord = null; 
     expect(() => game.guess("a")).toThrow("unknowWord is not initialized.");
   });
 
@@ -130,4 +153,45 @@ describe("Game test", () => {
       "The word has not been set. Please ensure that the game has been initialized properly."
     );
   });
+
+  test("should not decrement score below zero even after many wrong guesses", () => {
+    game.word = "abc";
+    game.unknowWord = "###";
+    game.startTime = Date.now() - 100000;
+    for (let i = 0; i < 50; i++) {
+      game.guess("z");
+    }
+    expect(game.getScore()).toBe(0);
+    expect(game.getNumberOfTries()).toBeLessThanOrEqual(0);
+  });
+
+  test("should return correct score, print and number of tries", () => {
+    game.word = "test";
+    game.unknowWord = "####";
+    expect(game.getScore()).toBe(1000);
+    expect(game.print()).toBe("####");
+    expect(game.getNumberOfTries()).toBe(5);
+  });
+
+  test("should skip rows with no word property", async () => {
+    fs.createReadStream.mockImplementation(() => {
+      const readableStream = {
+        pipe: jest.fn().mockReturnThis(),
+        on: jest.fn((event, callback) => {
+          if (event === "data") {
+            callback({}); // Pas de 'word' => ligne ignorée
+            callback({ word: "validword" }); // Ligne valide
+          }
+          if (event === "end") callback();
+          return readableStream;
+        }),
+      };
+      return readableStream;
+    });
+  
+    await game.loadWords();
+    // On doit avoir uniquement "validword" dans la liste, car la ligne sans 'word' est ignorée.
+    expect(game.listOfWords).toEqual(["validword"]);
+  });
+  
 });
