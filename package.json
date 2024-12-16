@@ -14,6 +14,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@estruyf/github-actions-reporter": "^1.9.2",
     "@firecms/neat": "^0.2.2",
     "chai": "^5.1.2",
     "chai-http": "^5.1.1",
