@@ -9,7 +9,7 @@
     "test:unit": "jest --coverage",
     "test:e2e": "npx playwright test --output=test/playwright/test-results",
     "test:all": "npm run test:unit && npm run test:e2e",
-    "test:e2e:report": "npx playwright show-report test/playwright/playwright-report"
+    "test:e2e:report": "npx playwright show-report"
   },
   "author": "",
   "license": "ISC",
