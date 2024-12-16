@@ -31,7 +31,7 @@ jobs:
         run: npm run test:e2e
 
       - name: Annotate Playwright Tests
-        run: npx @estruyf/playwright-github-actions-reporter
+        run: npx playwright-github-actions-reporter
 
       - name: Upload Playwright report
         uses: actions/upload-artifact@v3
