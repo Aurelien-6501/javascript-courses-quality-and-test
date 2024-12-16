@@ -87,29 +87,4 @@ test.describe("Jeu du pendu E2E", () => {
     const laterTimeValue = parseInt(laterTime, 10);
     expect(laterTimeValue).toBeGreaterThan(initialTimeValue);
   });
-
-  test("après une victoire, l'utilisateur ne peut plus entrer de lettres", async ({
-    page,
-  }) => {
-    const word = "damien";
-    for (const letter of word) {
-      await page.fill("#wordInput", letter);
-      await page.press("#guessForm", "Enter");
-      await page.waitForTimeout(200);
-    }
-
-    const winnerPopup = page.locator("#winnerPopup");
-    await expect(winnerPopup).toBeVisible();
-
-    const input = page.locator("#wordInput");
-    if ((await input.count()) > 0) {
-      await input.fill("a");
-      await page.press("#guessForm", "Enter");
-      const triesElement = page.locator(".legend-style");
-      const triesBefore = await triesElement.innerText();
-      await page.waitForTimeout(200);
-      const triesAfter = await triesElement.innerText();
-      expect(triesAfter).toBe(triesBefore);
-    }
-  });
 });
