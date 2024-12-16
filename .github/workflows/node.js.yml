@@ -3,9 +3,9 @@ concurrency: production
 
 on:
   push:
-    branches: [main]
+    branches: [Cours16Dec]
   pull_request:
-    branches: [main]
+    branches: [Cours16Dec]
 
 jobs:
   build:
