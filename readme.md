@@ -20,7 +20,29 @@ Bienvenue dans le jeu du pendu (_Hangman Game_) ! Ce projet est un exemple d’a
 ## Installation
 
 1. **Cloner le dépôt** :
+
    ```bash
    git clone https://github.com/USERNAME/REPO.git
    cd REPO
    ```
+
+2. **Installer les dépendances** :
+
+   ```bash
+   npm ci
+   ```
+
+3. **Installer les navigateurs pour Playwright** :
+   ```
+   npx playwright install --with-deps
+   ```
+
+## Lancement de l’application
+
+Pour lancer le serveur en mode développement (avec nodemon) :
+
+```
+npm run start
+```
+
+Par défaut, l’application sera accessible sur http://localhost:3030.
