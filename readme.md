@@ -1,6 +1,6 @@
 # Hangman Game
 
-[![Tests](https://github.com/USERNAME/REPO/actions/workflows/test.yml/badge.svg)](https://github.com/USERNAME/REPO/actions/workflows/test.yml)
+[![Tests](https://github.com/Aurelien-6501/javascript-courses-quality-and-test/actions/workflows/node.js.yml/badge.svg)](https://github.com/Aurelien-6501/javascript-courses-quality-and-test/actions/workflows/node.js.yml)
 
 Bienvenue dans le jeu du pendu (_Hangman Game_) ! Ce projet est un exemple d’application Node.js utilisant Express, EJS et une base de données SQLite pour stocker les scores. Les tests unitaires sont réalisés avec Jest, et les tests de bout en bout (E2E) avec Playwright.
 
