@@ -46,3 +46,33 @@ npm run start
 ```
 
 Par défaut, l’application sera accessible sur http://localhost:3030.
+
+## Tests Unitaires (Jest)
+
+Exécutez les tests unitaires avec couverture :
+
+```
+npm run test:unit
+```
+
+## Tests E2E (Playwright)
+
+Exécutez les tests E2E :
+
+```
+npm run test:e2e
+```
+
+Les résultats sont placés dans playwright-report. Pour afficher le rapport localement :
+
+```
+npm run test:e2e:report
+```
+
+## Tous les tests (Jest + Playwright)
+
+Pour exécuter les tests unitaires puis les tests E2E :
+
+```
+npm run test:all
+```
