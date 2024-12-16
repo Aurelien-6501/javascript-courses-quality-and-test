@@ -1,9 +1,9 @@
-const Game = require("../game.js");
+const Game = require("../../game.js");
 const fs = require("fs");
-const tools = require("../tools");
+const tools = require("../../tools.js");
 
 jest.mock("fs");
-jest.mock("../tools");
+jest.mock("../../tools");
 
 describe("Game test", () => {
   let game;
