@@ -7,7 +7,7 @@
     "start": "nodemon index.js",
     "test": "jest --coverage",
     "test:unit": "jest --coverage",
-    "test:e2e": "npx playwright test --output=test/playwright/test-results",
+    "test:e2e": "npx playwright test",
     "test:all": "npm run test:unit && npm run test:e2e",
     "test:e2e:report": "npx playwright show-report"
   },
