@@ -29,13 +29,3 @@ jobs:
 
       - name: Run E2E Tests (Playwright)
         run: npm run test:e2e
-
-      - name: Annotate Playwright Tests
-        run: npx playwright-github-actions-reporter
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v3
-        with:
-          name: playwright-report
-          path: playwright-report
-          if-no-files-found: warn
