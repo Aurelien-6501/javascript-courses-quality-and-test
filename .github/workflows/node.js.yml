@@ -1,9 +1,9 @@
 name: Test
 on:
   push:
-    branches: [Cours16Dec]
+    branches: [Cours16Dec, Cours17Dec, main]
   pull_request:
-    branches: [Cours16Dec]
+    branches: [Cours16Dec, Cours17Dec, main]
 
 jobs:
   build:
